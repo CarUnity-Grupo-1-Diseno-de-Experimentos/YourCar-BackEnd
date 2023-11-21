@@ -84,7 +84,7 @@ public class LoanController {
     //URL: http://localhost:8080/api/car-unity/v1/cars/1/loans
     //Method: POST
     @Transactional
-    @PostMapping("/cars/{id}/loans")
+    @PostMapping("/loans/{id}/loans")
     public ResponseEntity<Loan> createLoan(@PathVariable(value = "id") Long carId, @RequestBody Loan loan) {
 
         // Dentro de LoanController.createLoan
