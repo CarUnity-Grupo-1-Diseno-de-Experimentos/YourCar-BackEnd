@@ -12,7 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/car-unity/v1")
@@ -27,13 +30,55 @@ public class LoanController {
         this.carRepository = carRepository;
     }
 
-
-    //URL: http://localhost:8080/api/car-unity/v1/loans/filterByCodeUser
+    //URL: http://localhost:8080/api/car-unity/v1/loans
     //Method: GET
     @Transactional(readOnly = true)
+    @GetMapping("/loans")
+    public ResponseEntity<List<Loan>> getAllLoans() {
+        return new ResponseEntity<List<Loan>>(loanRepository.findAll(), HttpStatus.OK);
+    }
+
+    @Transactional(readOnly = true)
     @GetMapping("/loans/filterByCodeUser")
-    public ResponseEntity<List<Loan>> getAllLoansByCodeUser(@RequestParam(name="codeUser") String codeUser) {
-        return new ResponseEntity<List<Loan>>(loanRepository.findByCodeUser(codeUser), HttpStatus.OK);
+    public ResponseEntity<List<Map<String, Object>>> getAllLoansByCodeUser(@RequestParam(name="codeUser") String codeUser) {
+        List<Loan> loans = loanRepository.findByCodeUser(codeUser);
+
+        // Mapear la lista de préstamos a objetos JSON que contengan la información del auto
+        List<Map<String, Object>> loanResponses = loans.stream()
+                .map(loan -> {
+                    Map<String, Object> loanResponse = new HashMap<>();
+                    loanResponse.put("id", loan.getId());
+                    loanResponse.put("codeUser", loan.getCodeUser());
+                    loanResponse.put("loanDate", loan.getLoanDate());
+                    loanResponse.put("devolutionDate", loan.getDevolutionDate());
+                    loanResponse.put("carLoan", loan.isCarLoan());
+                    loanResponse.put("ownerUid", loan.getOwnerUid());
+
+                    // Información del auto
+                    Car car = loan.getCar();
+                    Map<String, Object> carInfo = new HashMap<>();
+                    carInfo.put("id", car.getId());
+                    carInfo.put("brand", car.getBrand());
+                    carInfo.put("model", car.getModel());
+                    carInfo.put("year", car.getYear());
+                    carInfo.put("photo", car.getPhoto());
+
+                    loanResponse.put("car", carInfo);
+
+                    return loanResponse;
+                })
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(loanResponses, HttpStatus.OK);
+    }
+
+
+    //URL: http://localhost:8080/api/car-unity/v1/loans/filterByOwnerUid
+    //Method: GET
+    @Transactional(readOnly = true)
+    @GetMapping("/loans/filterByOwnerUid")
+    public ResponseEntity<List<Loan>> getAllLoansByOwnerUid(@RequestParam(name="codeOwner") String codeOwner) {
+        return new ResponseEntity<List<Loan>>(loanRepository.findByOwnerUid(codeOwner), HttpStatus.OK);
     }
 
     //URL: http://localhost:8080/api/car-unity/v1/cars/1/loans
@@ -55,10 +100,7 @@ public class LoanController {
         carRepository.save(car);
 
         loan.setCar(car);
-        //existsLoanByCodeStudentAndBookLoan(loan, car);
         validateLoan(loan);
-        loan.setLoanDate(LocalDate.now());
-        loan.setDevolutionDate(LocalDate.now().plusDays(3));
         loan.setCarLoan(true);
         return new ResponseEntity<Loan>(loanRepository.save(loan), HttpStatus.CREATED);
     }
@@ -79,7 +121,7 @@ public class LoanController {
         carRepository.save(car);
 
         // Actualizar la información del préstamo
-        loan.setDevolutionDate(LocalDate.now());
+        //loan.setDevolutionDate(LocalDate.now());
         loan.setCarLoan(false);
         loanRepository.save(loan);
 
@@ -91,14 +133,9 @@ public class LoanController {
             throw new ValidationException("El codigo de estudiante no debe estar vacio");
         }
 
-        if (loan.getCodeUser().length()<10){
-            throw new ValidationException("El codigo de estudiante debe tener 10 caracteres");
+        if (loan.getCodeUser().length()>50){
+            throw new ValidationException("El codigo de usuario no debe tener mas de 50 caracteres");
         }
     }
 
-    private void existsLoanByCodeStudentAndBookLoan(Loan loan, Car car){
-        if(loanRepository.existsByCodeUserAndCarAndCarLoan(loan.getCodeUser(), car, false)){
-            throw new ValidationException("El alquiler del auto + " + car.getBrand() + " no es posible porque ya existe un alquiler pendiente para el usuario" + loan.getCodeUser());
-        }
-    }
 }

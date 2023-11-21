@@ -54,6 +54,15 @@ public class CarController {
         return new ResponseEntity<Car>(carService.createCar(car), HttpStatus.CREATED);
     }
 
+    //GetCarsByOwnerUid
+    //URL: http://localhost:8080/api/car-unity/v1/cars/filterByOwnerUid
+    //Method: GET
+    @Transactional(readOnly = true)
+    @GetMapping("/cars/filterByOwnerUid")
+    public ResponseEntity<List<Car>> getAllCarsByOwnerUid(@RequestParam(name="ownerUid") String ownerUid) {
+        return new ResponseEntity<List<Car>>(carRepository.findByOwnerUid(ownerUid), HttpStatus.OK);
+    }
+
     //URL: http://localhost:8080/api/car-unity/v1/cars/filterByBrand
     //Method: GET
     @Transactional(readOnly = true)

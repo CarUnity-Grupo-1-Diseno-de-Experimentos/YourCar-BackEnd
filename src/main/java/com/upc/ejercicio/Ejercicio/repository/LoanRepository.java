@@ -8,9 +8,11 @@ import java.util.List;
 
 public interface LoanRepository extends JpaRepository<Loan, Long>{
 
-    boolean existsByCodeUser(String codeUser);
-
     boolean existsByCodeUserAndCarAndCarLoan(String codeUser, Car car, boolean carLoan);
 
+    //boolean existsByCodeUser
+
     List<Loan> findByCodeUser(String codeUser);
+
+    List<Loan> findByOwnerUid(String codeOwner);
 }
